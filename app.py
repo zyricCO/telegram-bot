@@ -13,10 +13,10 @@ bot = Bot(token=TOKEN)
 # Flask app
 app = Flask(__name__)
 
-# Dispatcher setup
+# Dispatcher
 dispatcher = Dispatcher(bot=bot, update_queue=None, workers=1, use_context=True)
 
-# Start command
+# /start command
 def start(update: Update, context: CallbackContext) -> int:
     buttons = [['Login', 'Signup']]
     update.message.reply_text(
@@ -25,7 +25,7 @@ def start(update: Update, context: CallbackContext) -> int:
     )
     return CHOOSING
 
-# Handle login/signup choice
+# Choose between Login and Signup
 def choose_option(update: Update, context: CallbackContext) -> int:
     choice = update.message.text
     if choice == 'Login':
@@ -35,7 +35,7 @@ def choose_option(update: Update, context: CallbackContext) -> int:
         update.message.reply_text("Let's begin your KYC. What is your full name?", reply_markup=ReplyKeyboardRemove())
         return NAME
     else:
-        update.message.reply_text("Invalid option. Please choose Login or Signup.")
+        update.message.reply_text("Please select Login or Signup.")
         return CHOOSING
 
 # Login flow
@@ -45,7 +45,6 @@ def get_username(update: Update, context: CallbackContext) -> int:
     return PASSWORD
 
 def get_password(update: Update, context: CallbackContext) -> int:
-    context.user_data['password'] = update.message.text
     update.message.reply_text("Incorrect username or password.")
     return ConversationHandler.END
 
@@ -89,19 +88,19 @@ conv_handler = ConversationHandler(
 
 dispatcher.add_handler(conv_handler)
 
-# Webhook route
+# Webhook
 @app.route("/", methods=["POST"])
 def webhook():
     update = Update.de_json(request.get_json(force=True), bot)
     dispatcher.process_update(update)
     return "ok"
 
-# Home route
+# Home
 @app.route("/", methods=["GET"])
 def home():
     return "Bot is running!"
 
-# Run the app
+# Run app
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
