@@ -16,16 +16,16 @@ app = Flask(__name__)
 # Dispatcher
 dispatcher = Dispatcher(bot=bot, update_queue=None, workers=1, use_context=True)
 
-# /start command
-def start(update: Update, context: CallbackContext) -> int:
-    buttons = [['Login', 'Signup']]
+# Show Main Menu
+def show_menu(update: Update, context: CallbackContext) -> int:
+    buttons = [['Login', 'Signup'], ['Cancel']]
     update.message.reply_text(
         "Welcome! Please choose an option:",
-        reply_markup=ReplyKeyboardMarkup(buttons, one_time_keyboard=True, resize_keyboard=True)
+        reply_markup=ReplyKeyboardMarkup(buttons, resize_keyboard=True)
     )
     return CHOOSING
 
-# Choose between Login and Signup
+# Choose Login or Signup
 def choose_option(update: Update, context: CallbackContext) -> int:
     choice = update.message.text
     if choice == 'Login':
@@ -34,8 +34,11 @@ def choose_option(update: Update, context: CallbackContext) -> int:
     elif choice == 'Signup':
         update.message.reply_text("Let's begin your KYC. What is your full name?", reply_markup=ReplyKeyboardRemove())
         return NAME
+    elif choice == 'Cancel':
+        update.message.reply_text("Goodbye!", reply_markup=ReplyKeyboardRemove())
+        return ConversationHandler.END
     else:
-        update.message.reply_text("Please select Login or Signup.")
+        update.message.reply_text("Invalid option. Please choose Login or Signup.")
         return CHOOSING
 
 # Login flow
@@ -46,7 +49,7 @@ def get_username(update: Update, context: CallbackContext) -> int:
 
 def get_password(update: Update, context: CallbackContext) -> int:
     update.message.reply_text("Incorrect username or password.")
-    return ConversationHandler.END
+    return show_menu(update, context)
 
 # Signup (KYC) flow
 def get_name(update: Update, context: CallbackContext) -> int:
@@ -65,16 +68,16 @@ def get_phone(update: Update, context: CallbackContext) -> int:
     summary = f"KYC Completed:\nName: {user_data['name']}\nEmail: {user_data['email']}\nPhone: {user_data['phone']}"
     update.message.reply_text("Thank you! Your KYC has been submitted.")
     context.bot.send_message(chat_id=1841079821, text=summary)
-    return ConversationHandler.END
+    return show_menu(update, context)
 
-# Cancel handler
+# Cancel command
 def cancel(update: Update, context: CallbackContext) -> int:
     update.message.reply_text("Operation cancelled.", reply_markup=ReplyKeyboardRemove())
-    return ConversationHandler.END
+    return show_menu(update, context)
 
 # Conversation handler
 conv_handler = ConversationHandler(
-    entry_points=[CommandHandler('start', start)],
+    entry_points=[CommandHandler('start', show_menu), CommandHandler('menu', show_menu)],
     states={
         CHOOSING: [MessageHandler(Filters.text & ~Filters.command, choose_option)],
         USERNAME: [MessageHandler(Filters.text & ~Filters.command, get_username)],
